@@ -693,8 +693,8 @@ class LEOrder
                 if (false === $certificates) {
                     return false;
                 }
-                if (isset($preferredChain)) {
-                    $parsedIntermediate = openssl_x509_parse($certificates['intermediate']);
+                if (isset($preferredChain) && isset($certificates[1])) {
+                    $parsedIntermediate = openssl_x509_parse($certificates[1]);
                     $headers = str_replace("\r\n", "\n", $post['header']);
                     if(isset($parsedIntermediate['issuer']['CN'])
                         && $preferredChain !== $parsedIntermediate['issuer']['CN']) {
@@ -706,11 +706,13 @@ class LEOrder
 
                                 $alternativeCertResponse = $this->postCertificateRequest($link);
                                 $alternativeCertificate = $this->validateCertificateResponse($alternativeCertResponse);
-                                $parsedIntermediate = openssl_x509_parse($alternativeCertificate['intermediate']);
-                                if (isset($parsedIntermediate['issuer']['CN']) && $preferredChain === $parsedIntermediate['issuer']['CN']) {
-                                    $certificates = $alternativeCertificate;
-                                    $preferredChainFound = true;
-                                    break;
+                                if (isset($alternativeCertificate[1])) {
+                                    $parsedIntermediate = openssl_x509_parse($alternativeCertificate[1]);
+                                    if (isset($parsedIntermediate['issuer']['CN']) && $preferredChain === $parsedIntermediate['issuer']['CN']) {
+                                        $certificates = $alternativeCertificate;
+                                        $preferredChainFound = true;
+                                        break;
+                                    }
                                 }
                             }
                             if (false === $preferredChainFound) {
@@ -826,7 +828,7 @@ class LEOrder
      */
     private function saveCertificate(array $certificates)
     {
-        if (isset($this->certificateKeys['certificate'])) file_put_contents($this->certificateKeys['certificate'], $certificates['leaf']);
+        if (isset($this->certificateKeys['certificate'])) file_put_contents($this->certificateKeys['certificate'], $certificates[0]);
 
         if (count($certificates) > 1 && isset($this->certificateKeys['fullchain_certificate'])) {
             $fullchain = implode("\n", $certificates) . "\n";
@@ -844,10 +846,7 @@ class LEOrder
         {
             if(preg_match_all('~(-----BEGIN\sCERTIFICATE-----[\s\S]+?-----END\sCERTIFICATE-----)~i', $response['body'], $matches))
             {
-                return [
-                    'leaf' => $matches[0][0],
-                    'intermediate' => $matches[0][1],
-                ];
+                return $matches[0];
             }
             else
             {
