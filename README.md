@@ -10,7 +10,7 @@ PHP LetsEncrypt client library for ACME v2. The aim of this client is to make an
 
 ## Current version
 
-The current version is 1.3.0
+The current version is 1.3.1
 
 ## Getting Started
 
