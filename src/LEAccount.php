@@ -72,7 +72,7 @@ class LEAccount
 			{
 				$this->log->info('No account found, attempting to create account.');
 			}
-			else if($this->log >= LECLient::LOG_STATUS) LEFunctions::log('No account found, attempting to create account.', 'function LEAccount __construct');
+			elseif($this->log >= LEClient::LOG_STATUS) LEFunctions::log('No account found, attempting to create account.', 'function LEAccount __construct');
 			
 			LEFunctions::RSAgenerateKeys(null, $this->accountKeys['private_key'], $this->accountKeys['public_key']);
 			$this->connector->accountURL = $this->createLEAccount($email);
@@ -127,7 +127,7 @@ class LEAccount
      */
 	private function getLEAccountData()
 	{
-		$sign = $this->connector->signRequestKid(array('' => ''), $this->connector->accountURL, $this->connector->accountURL);
+		$sign = $this->connector->signRequestKid('', $this->connector->accountURL, $this->connector->accountURL);
 		$post = $this->connector->post($this->connector->accountURL, $sign);
 		if($post['status'] === 200)
 		{
@@ -135,7 +135,7 @@ class LEAccount
 			$this->key = $post['body']['key'];
 			$this->contact = $post['body']['contact'] ?? 'noreply@localhost.tld';
 			$this->agreement = isset($post['body']['agreement']) ? $post['body']['agreement'] : '';			
-			$this->createdAt = $post['body']['createdAt'];
+			$this->createdAt = $post['body']['createdAt'] ?? '';
 			$this->status = $post['body']['status'];
 		}
 		else
@@ -163,7 +163,7 @@ class LEAccount
 			$this->key = $post['body']['key'];
 			$this->contact = $post['body']['contact'] ?? 'noreply@localhost.tld';
 			$this->agreement = isset($post['body']['agreement']) ? $post['body']['agreement'] : '';			
-			$this->createdAt = $post['body']['createdAt'];
+			$this->createdAt = $post['body']['createdAt'] ?? '';
 			$this->status = $post['body']['status'];
 			if($this->log instanceof \Psr\Log\LoggerInterface) 
 			{

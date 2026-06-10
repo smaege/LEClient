@@ -1,0 +1,17 @@
+services:
+  challtestsrv:
+    image: ghcr.io/letsencrypt/pebble-challtestsrv:latest
+    ports:
+      - "8055:8055"
+      - "5002:5002"
+      - "14000:14000"
+      - "15000:15000"
+    command: -http01 ":5002"
+
+  pebble:
+    image: ghcr.io/letsencrypt/pebble:latest
+    network_mode: "service:challtestsrv"
+    environment:
+      - PEBBLE_VA_NOSLEEP=1
+    depends_on:
+      - challtestsrv

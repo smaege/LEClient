@@ -1,0 +1,7 @@
+{
+    "newNonce": "/acme/new-nonce",
+    "newAccount": "/acme/new-account",
+    "newOrder": "/acme/new-order",
+    "revokeCert": "/acme/revoke-cert",
+    "keyChange": "/acme/key-change"
+}

@@ -1,0 +1,12 @@
+{
+    "identifier": {"type": "dns", "value": "example.com"},
+    "status": "pending",
+    "challenges": [
+        {
+            "type": "http-01",
+            "status": "pending",
+            "url": "https://acme.test/acme/challenge/http/token",
+            "token": "token-example-com"
+        }
+    ]
+}

@@ -439,7 +439,7 @@ class LEOrder
                             case LEOrder::CHALLENGE_TYPE_HTTP:
                                 if($localcheck == false OR LEFunctions::checkHTTPChallenge($identifier, $challenge['token'], $keyAuthorization))
                                 {
-                                    $sign = $this->connector->signRequestKid(array('keyAuthorization' => $keyAuthorization), $this->connector->accountURL, $challenge['url']);
+                                    $sign = $this->connector->signRequestKid('{}', $this->connector->accountURL, $challenge['url']);
                                     $post = $this->connector->post($challenge['url'], $sign);
                                     if($post['status'] === 200)
                                     {
@@ -451,12 +451,14 @@ class LEOrder
                                             }
                                             elseif($this->log >= LEClient::LOG_STATUS) LEFunctions::log('HTTP challenge for \'' . $identifier . '\' valid.', 'function verifyPendingOrderAuthorization');
                                         }
-                                        while($auth->status == 'pending')
+                                        $attempts = 0;
+                                        while($auth->status == 'pending' && $attempts < 30)
                                         {
                                             sleep(1);
                                             $auth->updateData();
+                                            $attempts++;
                                         }
-                                        return true;
+                                        return $auth->status === 'valid';
                                     }
                                 }
                                 else
@@ -472,7 +474,7 @@ class LEOrder
                                 $DNSDigest = LEFunctions::Base64UrlSafeEncode(hash('sha256', $keyAuthorization, true));
                                 if($localcheck == false OR LEFunctions::checkDNSChallenge($identifier, $DNSDigest))
                                 {
-                                    $sign = $this->connector->signRequestKid(array('keyAuthorization' => $keyAuthorization), $this->connector->accountURL, $challenge['url']);
+                                    $sign = $this->connector->signRequestKid('{}', $this->connector->accountURL, $challenge['url']);
                                     $post = $this->connector->post($challenge['url'], $sign);
                                     if($post['status'] === 200)
                                     {
@@ -484,12 +486,14 @@ class LEOrder
                                             }
                                             elseif($this->log >= LEClient::LOG_STATUS) LEFunctions::log('DNS challenge for \'' . $identifier . '\' valid.', 'function verifyPendingOrderAuthorization');
                                         }
-                                        while($auth->status == 'pending')
+                                        $attempts = 0;
+                                        while($auth->status == 'pending' && $attempts < 30)
                                         {
                                             sleep(1);
                                             $auth->updateData();
+                                            $attempts++;
                                         }
-                                        return true;
+                                        return $auth->status === 'valid';
                                     }
                                 }
                                 else

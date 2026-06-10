@@ -57,6 +57,8 @@ class LEConnector
 	
 	private $sourceIp = false;
 
+	private $verifySSL = true;
+
     /**
      * Initiates the LetsEncrypt Connector class.
      *
@@ -64,15 +66,17 @@ class LEConnector
      * @param string	$baseURL 		The LetsEncrypt server URL to make requests to.
      * @param array		$accountKeys 	Array containing location of account keys files.
      * @param string    $sourceIp       Optional source IP address.
+     * @param boolean   $verifySSL      Whether to verify SSL certificates. Defaults to true.
      */
-	public function __construct($log, $baseURL, $accountKeys, $sourceIp = false)
+	public function __construct($log, $baseURL, $accountKeys, $sourceIp = false, $verifySSL = true)
 	{
 		$this->baseURL = $baseURL;
 		$this->accountKeys = $accountKeys;
 		$this->log = $log;
+		$this->sourceIp = $sourceIp;
+		$this->verifySSL = $verifySSL;
 		$this->getLEDirectory();
 		$this->getNewNonce();
-		$this->sourceIp = $sourceIp;
 	}
 
     /**
@@ -80,7 +84,12 @@ class LEConnector
      */
 	private function getLEDirectory()
 	{
-		$req = $this->get('/directory');
+		// Pebble serves its directory at /dir; Let's Encrypt at /directory.
+		// When baseURL already points at a directory resource, fetch it directly.
+		$directoryPath = preg_match('~/(directory|dir)$~i', rtrim($this->baseURL, '/'))
+			? ''
+			: '/directory';
+		$req = $this->get($directoryPath);
 		$this->keyChange = $req['body']['keyChange'];
 		$this->newAccount = $req['body']['newAccount'];
 		$this->newNonce = $req['body']['newNonce'];
@@ -109,13 +118,21 @@ class LEConnector
 	{
 		if($this->accountDeactivated) throw LEConnectorException::AccountDeactivatedException();
 
-		$headers = array('Accept: application/json', 'Content-Type: application/jose+json');
+		$headers = array(
+			'Accept: application/json',
+			'Content-Type: application/jose+json',
+			'User-Agent: LEClient (https://github.com/yourivw/LEClient; PHP/' . PHP_VERSION . ')',
+		);
 		$requestURL = preg_match('~^http~', $URL) ? $URL : $this->baseURL . $URL;
         $handle = curl_init();
         curl_setopt($handle, CURLOPT_URL, $requestURL);
         curl_setopt($handle, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($handle, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($handle, CURLOPT_HEADER, true);
+        curl_setopt($handle, CURLOPT_CONNECTTIMEOUT, 10);
+        curl_setopt($handle, CURLOPT_TIMEOUT, 30);
+        curl_setopt($handle, CURLOPT_SSL_VERIFYPEER, $this->verifySSL);
+        curl_setopt($handle, CURLOPT_SSL_VERIFYHOST, $this->verifySSL ? 2 : 0);
         if($this->sourceIp !== false) {
             curl_setopt($handle, CURLOPT_INTERFACE, $this->sourceIp);
         }

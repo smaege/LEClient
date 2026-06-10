@@ -1,0 +1,6 @@
+{
+    "status": "pending",
+    "identifiers": [{"type": "dns", "value": "example.com"}],
+    "authorizations": [],
+    "finalize": "https://acme.test/acme/finalize/order-1"
+}

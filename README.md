@@ -10,7 +10,7 @@ PHP LetsEncrypt client library for ACME v2. The aim of this client is to make an
 
 ## Current version
 
-The current version is 1.2.2
+The current version is 1.3.0
 
 ## Getting Started
 
@@ -20,17 +20,18 @@ Also have a look at the [LetsEncrypt documentation](https://letsencrypt.org/docs
 
 ### Prerequisites
 
-The minimum required PHP version is 5.2.0. Version 7.1.0 is required for EC keys. The function generating EC keys will throw an exception when trying to generate EC keys with a PHP version below 7.1.0.
-
-Version 1.0.0 will be kept available, but will not be maintained.
+PHP **8.1** or later is required. EC certificate keys require the OpenSSL extension with EC support (included in default PHP builds).
 
 This client also depends on cURL and OpenSSL.
 
+To run the test suite, install development dependencies with Composer (see [Testing](#testing)).
+
 ### Installing
 
-Using composer:
+Using Composer:
+
 ```bash
-composer require yourivw/leclient
+composer require helios-ag/leclient
 ```
 
 It is advisable to cut the script some slack regarding execution time by setting a higher maximum time. There are several ways to do so. One is to add the following to the top of the page:
@@ -226,11 +227,104 @@ The DNS record name also depends on your provider, therefore getPendingAuthoriza
 
 *A wildcard domain, like `*.example.org`, will be verified as `example.org`, as shown above. This means the DNS record name should be `_acme-challenge.example.org`*
 
+## Let's Encrypt Generation Y
+
+Let's Encrypt is rolling out its [Generation Y certificate hierarchy](https://letsencrypt.org/2025/11/24/gen-y-hierarchy.html). Issuance from this hierarchy can return certificate chains with **more than two** PEM blocks: the leaf, the issuing intermediate, and a cross-signed root.
+
+LEClient now parses and stores **all** certificates returned by the ACME certificate download endpoint:
+
+- `certificate.crt` contains the leaf certificate only (unchanged behaviour).
+- `fullchain.crt` contains the complete chain, including any cross-signed Generation Y root.
+
+If you use `getCertificate($preferredChain)` to select an alternate chain, preferred-chain matching continues to work as before.
+
+## Testing
+
+The project includes a PHPUnit test suite. Install development dependencies first:
+
+```bash
+composer install
+```
+
+### Test suites
+
+| Suite | Command | Description |
+| ----- | ------- | ----------- |
+| Unit | `composer test:unit` | Pure PHP tests with no external services |
+| Integration | `composer test:integration` | ACME flow tests against an embedded mock server (started automatically) |
+| E2E | `composer test:e2e` | Full HTTP-01 issuance against [Pebble](https://github.com/letsencrypt/pebble) |
+| Unit + Integration | `composer test` | Runs unit and integration suites |
+| All | `composer test:all` | Runs unit, integration, and E2E suites |
+
+Run all configured suites with PHPUnit directly:
+
+```bash
+./vendor/bin/phpunit
+```
+
+If the `PEBBLE_URL` environment variable is set, the E2E test runs as part of the full suite. Unset it when you only want unit and integration tests:
+
+```bash
+unset PEBBLE_URL
+./vendor/bin/phpunit
+```
+
+### End-to-end tests with Pebble (Docker)
+
+E2E tests require Pebble and the Pebble challenge test server. Start them with Docker Compose:
+
+```bash
+composer docker:test-up
+```
+
+Or directly:
+
+```bash
+docker compose -f docker-compose.test.yml up -d
+```
+
+Verify Pebble is reachable:
+
+```bash
+curl -k https://localhost:14000/dir
+```
+
+Run the E2E suite:
+
+```bash
+PEBBLE_URL=https://localhost:14000/dir \
+CHALLTESTSRV_URL=http://127.0.0.1:8055 \
+PEBBLE_DOMAIN=localhost \
+composer test:e2e
+```
+
+When using a custom ACME directory URL with Pebble, pass the full directory URL (including `/dir`). Let's Encrypt production and staging URLs should be passed without a path suffix; the client appends `/directory` automatically.
+
+Stop the containers when finished:
+
+```bash
+composer docker:test-down
+```
+
+Or directly:
+
+```bash
+docker compose -f docker-compose.test.yml down
+```
+
 ## Full example
 
-For both HTTP and DNS authorizations, a full example is available in the project's main code directory. The HTTP authorization example is contained in one file. As described above, the DNS authorization example is split into two parts, to allow for the DNS record to update in the meantime. While the TTL of the record might be low, it can sometimes take some time for your provider to update your DNS records after an amendment.
+Example scripts are in the [`examples/`](examples/) directory:
 
-If you can't get these examples, or the client library to work, try and have a look at the LetsEncrypt documentation mentioned above as well. In order for the example code to work, make sure to replace all 'example.org' information with your own information. The examples will fail when you run them using the preset example data.
+| File | Description |
+| ---- | ----------- |
+| [`examples/http.php`](examples/http.php) | HTTP-01 authorization and certificate issuance |
+| [`examples/dns_init.php`](examples/dns_init.php) | DNS-01: create TXT records (part 1) |
+| [`examples/dns_finish.php`](examples/dns_finish.php) | DNS-01: verify, finalize, and download the certificate (part 2) |
+
+The DNS flow is split into two scripts so you can wait for DNS propagation between creating records and verifying them.
+
+If you can't get these examples, or the client library to work, try and have a look at the LetsEncrypt documentation mentioned above as well. In order for the example code to work, make sure to replace all `example.org` information with your own information. The examples will fail when you run them using the preset example data.
 
 ## Security
 
