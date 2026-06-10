@@ -34,7 +34,7 @@ use LEClient\Exceptions\LEAuthorizationException;
  * @author     Youri van Weegberg <youri@yourivw.nl>
  * @copyright  2018 Youri van Weegberg
  * @license    https://opensource.org/licenses/mit-license.php  MIT License
- * @link       https://github.com/yourivw/LEClient
+ * @link       https://github.com/smaege/LEClient
  * @since      Class available since Release 1.0.0
  */
 class LEAuthorization

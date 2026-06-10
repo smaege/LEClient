@@ -1,13 +1,46 @@
 {
-    "name": "helios-ag/leclient",
+    "name": "smaege/leclient",
     "type": "library",
     "description": "PHP LetsEncrypt client library for ACME v2",
     "license": "MIT",
-    "version": "1.3.0",
+    "keywords": [
+        "letsencrypt",
+        "acme",
+        "acme-v2",
+        "ssl",
+        "tls",
+        "certificate",
+        "https"
+    ],
+    "authors": [
+        {
+            "name": "Youri van Weegberg",
+            "email": "youri@yourivw.nl",
+            "role": "Developer"
+        },
+        {
+            "name": "Al Ganiev",
+            "email": "helios.ag@gmail.com",
+            "role": "Maintainer"
+        },
+        {
+            "name": "Miikka Aho",
+            "email": "miikka@finquteam.com",
+            "role": "Maintainer"
+        }
+    ],
+    "homepage": "https://github.com/smaege/LEClient",
+    "support": {
+        "issues": "https://github.com/smaege/LEClient/issues",
+        "source": "https://github.com/smaege/LEClient"
+    },
     "require": {
         "php": ">=8.1",
         "ext-openssl": "*",
         "ext-curl": "*"
+    },
+    "suggest": {
+        "psr/log": "Required when using a PSR-3 logger with LEClient"
     },
     "autoload": {
         "psr-4": {

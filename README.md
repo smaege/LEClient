@@ -1,8 +1,8 @@
 # LEClient
 
-[![Latest Stable Version](https://poser.pugx.org/yourivw/leclient/v/stable)](https://packagist.org/packages/yourivw/leclient)
-[![Total Downloads](https://poser.pugx.org/yourivw/leclient/downloads)](https://packagist.org/packages/yourivw/leclient)
-[![License](https://poser.pugx.org/yourivw/leclient/license)](https://packagist.org/packages/yourivw/leclient)
+[![Latest Stable Version](https://poser.pugx.org/smaege/leclient/v/stable)](https://packagist.org/packages/smaege/leclient)
+[![Total Downloads](https://poser.pugx.org/smaege/leclient/downloads)](https://packagist.org/packages/smaege/leclient)
+[![License](https://poser.pugx.org/smaege/leclient/license)](https://packagist.org/packages/smaege/leclient)
 
 &nbsp;
 
@@ -31,7 +31,7 @@ To run the test suite, install development dependencies with Composer (see [Test
 Using Composer:
 
 ```bash
-composer require helios-ag/leclient
+composer require smaege/leclient
 ```
 
 It is advisable to cut the script some slack regarding execution time by setting a higher maximum time. There are several ways to do so. One is to add the following to the top of the page:
@@ -252,7 +252,7 @@ composer install
 | ----- | ------- | ----------- |
 | Unit | `composer test:unit` | Pure PHP tests with no external services |
 | Integration | `composer test:integration` | ACME flow tests against an embedded mock server (started automatically) |
-| E2E | `composer test:e2e` | Full HTTP-01 issuance against [Pebble](https://github.com/letsencrypt/pebble) |
+| E2E | `composer test:e2e` | Full HTTP-01 issuance against [Pebble](https://github.com/letsencrypt/pebble); local/Docker only, not run in GitHub Actions |
 | Unit + Integration | `composer test` | Runs unit and integration suites |
 | All | `composer test:all` | Runs unit, integration, and E2E suites |
 

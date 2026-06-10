@@ -1,0 +1,7 @@
+/tests export-ignore
+/examples export-ignore
+/phpunit.xml export-ignore
+/docker-compose.test.yml export-ignore
+/.github export-ignore
+/composer.phar export-ignore
+/.phpunit.cache export-ignore

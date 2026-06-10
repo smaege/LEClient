@@ -32,7 +32,7 @@ namespace LEClient\Exceptions;
  * @author     Youri van Weegberg <youri@yourivw.nl>
  * @copyright  2020 Youri van Weegberg
  * @license    https://opensource.org/licenses/mit-license.php  MIT License
- * @link       https://github.com/yourivw/LEClient
+ * @link       https://github.com/smaege/LEClient
  * @since      Class available since Release 1.2.0
  */
 class LEException extends \RuntimeException

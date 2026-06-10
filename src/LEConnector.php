@@ -34,7 +34,7 @@ use LEClient\Exceptions\LEConnectorException;
  * @author     Youri van Weegberg <youri@yourivw.nl>
  * @copyright  2018 Youri van Weegberg
  * @license    https://opensource.org/licenses/mit-license.php  MIT License
- * @link       https://github.com/yourivw/LEClient
+ * @link       https://github.com/smaege/LEClient
  * @since      Class available since Release 1.0.0
  */
 class LEConnector
@@ -121,7 +121,7 @@ class LEConnector
 		$headers = array(
 			'Accept: application/json',
 			'Content-Type: application/jose+json',
-			'User-Agent: LEClient (https://github.com/yourivw/LEClient; PHP/' . PHP_VERSION . ')',
+			'User-Agent: LEClient (https://github.com/smaege/LEClient; PHP/' . PHP_VERSION . ')',
 		);
 		$requestURL = preg_match('~^http~', $URL) ? $URL : $this->baseURL . $URL;
         $handle = curl_init();
