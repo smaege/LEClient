@@ -87,7 +87,42 @@ class CertificateParsingTest extends TestCase
 
         $this->assertTrue($order->getCertificate());
         $this->assertSame($leaf, trim(file_get_contents($this->certificateKeys['certificate'])));
-        $this->assertFileDoesNotExist($this->certificateKeys['fullchain_certificate']);
+        $this->assertSame($leaf, trim(file_get_contents($this->certificateKeys['fullchain_certificate'])));
+    }
+
+    public function testGetCertificateSavesFullchainOnlySingleCertificateResponse(): void
+    {
+        $leaf = trim(AcmeResponseFactory::certificatePem());
+        $certificateKeys = $this->certificateKeys();
+        unset($certificateKeys['certificate']);
+
+        $order = $this->createValidOrderWithStub([
+            'request' => 'POST',
+            'header' => '',
+            'status' => 200,
+            'body' => $leaf . "\n",
+        ], $certificateKeys);
+
+        $this->assertTrue($order->getCertificate());
+        $this->assertSame($leaf, trim(file_get_contents($this->certificateKeys['fullchain_certificate'])));
+    }
+
+    public function testGetCertificateReturnsFalseWhenCertificateCannotBeWritten(): void
+    {
+        $leaf = trim(AcmeResponseFactory::certificatePem());
+        $certificateKeys = $this->certificateKeys();
+        $blockedPath = $this->tempDir->path() . '/not-a-directory';
+        file_put_contents($blockedPath, 'blocking file');
+        $certificateKeys['certificate'] = $blockedPath . '/certificate.crt';
+
+        $order = $this->createValidOrderWithStub([
+            'request' => 'POST',
+            'header' => '',
+            'status' => 200,
+            'body' => $leaf . "\n",
+        ], $certificateKeys);
+
+        $this->assertFalse($order->getCertificate());
     }
 
     public function testGetCertificateReturnsFalseForInvalidPem(): void
@@ -119,10 +154,10 @@ class CertificateParsingTest extends TestCase
         return KeyFactory::certificateKeyPaths($this->tempDir->path());
     }
 
-    private function createValidOrderWithStub(array $certResponse): LEOrder
+    private function createValidOrderWithStub(array $certResponse, ?array $certificateKeys = null): LEOrder
     {
         $accountKeys = KeyFactory::generateAccountKeys($this->tempDir->path());
-        $certificateKeys = $this->certificateKeys();
+        $certificateKeys = $certificateKeys ?? $this->certificateKeys();
         \LEClient\LEFunctions::RSAGenerateKeys(null, $certificateKeys['private_key'], $certificateKeys['public_key'], 2048);
 
         $orderUrl = 'https://acme.test/order/1';

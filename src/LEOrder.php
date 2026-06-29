@@ -832,12 +832,24 @@ class LEOrder
      */
     private function saveCertificate(array $certificates)
     {
-        if (isset($this->certificateKeys['certificate'])) file_put_contents($this->certificateKeys['certificate'], $certificates[0]);
-
-        if (count($certificates) > 1 && isset($this->certificateKeys['fullchain_certificate'])) {
-            $fullchain = implode("\n", $certificates) . "\n";
-            file_put_contents(trim($this->certificateKeys['fullchain_certificate']), $fullchain);
+        $saved = false;
+        if (isset($this->certificateKeys['certificate'])) {
+            $certificate = $certificates[0];
+            if (@file_put_contents($this->certificateKeys['certificate'], $certificate) !== strlen($certificate)) {
+                return false;
+            }
+            $saved = true;
         }
+
+        if (isset($this->certificateKeys['fullchain_certificate'])) {
+            $fullchain = implode("\n", $certificates) . "\n";
+            if (@file_put_contents(trim($this->certificateKeys['fullchain_certificate']), $fullchain) !== strlen($fullchain)) {
+                return false;
+            }
+            $saved = true;
+        }
+        if (!$saved) return false;
+
         if ($this->log instanceof \Psr\Log\LoggerInterface) {
             $this->log->info('Certificate for \'' . $this->basename . '\' saved');
         } elseif ($this->log >= LEClient::LOG_STATUS) LEFunctions::log('Certificate for \'' . $this->basename . '\' saved', 'function getCertificate');
