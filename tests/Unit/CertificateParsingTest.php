@@ -125,6 +125,61 @@ class CertificateParsingTest extends TestCase
         $this->assertFalse($order->getCertificate());
     }
 
+    public function testGetCertificateReturnsFalseWhenFullchainCannotBeWritten(): void
+    {
+        $leaf = trim(AcmeResponseFactory::certificatePem());
+        $certificateKeys = $this->certificateKeys();
+        $blockedPath = $this->tempDir->path() . '/not-a-directory';
+        file_put_contents($blockedPath, 'blocking file');
+        $certificateKeys['fullchain_certificate'] = $blockedPath . '/fullchain.crt';
+
+        $order = $this->createValidOrderWithStub([
+            'request' => 'POST',
+            'header' => '',
+            'status' => 200,
+            'body' => $leaf . "\n",
+        ], $certificateKeys);
+
+        $this->assertFalse($order->getCertificate());
+        $this->assertSame($leaf, trim(file_get_contents($certificateKeys['certificate'])));
+        $this->assertFileDoesNotExist($certificateKeys['fullchain_certificate']);
+    }
+
+    public function testGetCertificateUsesPreferredAlternateChainWhenIssuerMatches(): void
+    {
+        $leaf = trim(AcmeResponseFactory::certificatePem());
+        $defaultIntermediate = trim(AcmeResponseFactory::chainPem());
+        $preferredIntermediate = trim(AcmeResponseFactory::rootPem());
+        $alternateUrl = 'https://acme.test/acme/cert/1?preferred=1';
+
+        $defaultIssuer = openssl_x509_parse($defaultIntermediate)['issuer']['CN'] ?? null;
+        $preferredIssuer = openssl_x509_parse($preferredIntermediate)['issuer']['CN'] ?? null;
+        $this->assertNotEmpty($defaultIssuer);
+        $this->assertNotEmpty($preferredIssuer);
+        $this->assertNotSame($defaultIssuer, $preferredIssuer);
+
+        $order = $this->createValidOrderWithStub([
+            'request' => 'POST',
+            'header' => 'Link: <' . $alternateUrl . '>;rel="alternate"' . "\r\n",
+            'status' => 200,
+            'body' => $leaf . "\n" . $defaultIntermediate . "\n",
+        ], null, [
+            $alternateUrl => [
+                'request' => 'POST',
+                'header' => '',
+                'status' => 200,
+                'body' => $leaf . "\n" . $preferredIntermediate . "\n",
+            ],
+        ]);
+
+        $this->assertTrue($order->getCertificate($preferredIssuer));
+
+        $fullchain = file_get_contents($this->certificateKeys['fullchain_certificate']);
+        $this->assertStringContainsString($leaf, $fullchain);
+        $this->assertStringContainsString($preferredIntermediate, $fullchain);
+        $this->assertStringNotContainsString($defaultIntermediate, $fullchain);
+    }
+
     public function testGetCertificateReturnsFalseForInvalidPem(): void
     {
         $order = $this->createValidOrderWithStub([
@@ -154,7 +209,11 @@ class CertificateParsingTest extends TestCase
         return KeyFactory::certificateKeyPaths($this->tempDir->path());
     }
 
-    private function createValidOrderWithStub(array $certResponse, ?array $certificateKeys = null): LEOrder
+    private function createValidOrderWithStub(
+        array $certResponse,
+        ?array $certificateKeys = null,
+        array $additionalCertificateResponses = []
+    ): LEOrder
     {
         $accountKeys = KeyFactory::generateAccountKeys($this->tempDir->path());
         $certificateKeys = $certificateKeys ?? $this->certificateKeys();
@@ -179,6 +238,9 @@ class CertificateParsingTest extends TestCase
             ],
         ]);
         $connector->queueResponse('POST', $certUrl, $certResponse);
+        foreach ($additionalCertificateResponses as $url => $response) {
+            $connector->queueResponse('POST', $url, $response);
+        }
 
         $order = new LEOrder(
             $connector,
