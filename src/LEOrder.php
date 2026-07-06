@@ -832,23 +832,33 @@ class LEOrder
      */
     private function saveCertificate(array $certificates)
     {
-        $saved = false;
+        $files = array();
         if (isset($this->certificateKeys['certificate'])) {
-            $certificate = $certificates[0];
-            if (@file_put_contents($this->certificateKeys['certificate'], $certificate) !== strlen($certificate)) {
-                return false;
-            }
-            $saved = true;
+            $files[$this->certificateKeys['certificate']] = $certificates[0];
         }
 
         if (isset($this->certificateKeys['fullchain_certificate'])) {
             $fullchain = implode("\n", $certificates) . "\n";
-            if (@file_put_contents(trim($this->certificateKeys['fullchain_certificate']), $fullchain) !== strlen($fullchain)) {
+            $files[trim($this->certificateKeys['fullchain_certificate'])] = $fullchain;
+        }
+        if (empty($files)) return false;
+
+        $previousFiles = array();
+        $writtenFiles = array();
+        foreach ($files as $path => $contents) {
+            $previousFiles[$path] = file_exists($path) ? file_get_contents($path) : false;
+            if (@file_put_contents($path, $contents) !== strlen($contents)) {
+                foreach ($writtenFiles as $writtenPath) {
+                    if ($previousFiles[$writtenPath] === false) {
+                        @unlink($writtenPath);
+                    } else {
+                        @file_put_contents($writtenPath, $previousFiles[$writtenPath]);
+                    }
+                }
                 return false;
             }
-            $saved = true;
+            $writtenFiles[] = $path;
         }
-        if (!$saved) return false;
 
         if ($this->log instanceof \Psr\Log\LoggerInterface) {
             $this->log->info('Certificate for \'' . $this->basename . '\' saved');
