@@ -832,28 +832,50 @@ class LEOrder
      */
     private function saveCertificate(array $certificates)
     {
-        $saved = false;
+        $writes = array();
         if (isset($this->certificateKeys['certificate'])) {
-            $certificate = $certificates[0];
-            if (@file_put_contents($this->certificateKeys['certificate'], $certificate) !== strlen($certificate)) {
-                return false;
-            }
-            $saved = true;
+            $writes[$this->certificateKeys['certificate']] = $certificates[0];
         }
 
         if (isset($this->certificateKeys['fullchain_certificate'])) {
-            $fullchain = implode("\n", $certificates) . "\n";
-            if (@file_put_contents(trim($this->certificateKeys['fullchain_certificate']), $fullchain) !== strlen($fullchain)) {
+            $writes[trim($this->certificateKeys['fullchain_certificate'])] = implode("\n", $certificates) . "\n";
+        }
+        if (empty($writes)) return false;
+
+        $originals = array();
+        foreach ($writes as $file => $contents) {
+            $exists = file_exists($file);
+            $original = $exists ? @file_get_contents($file) : false;
+            if ($exists && $original === false) {
+                $this->restoreCertificateFiles($originals);
                 return false;
             }
-            $saved = true;
+
+            $originals[$file] = array('exists' => $exists, 'contents' => $original);
+            if (@file_put_contents($file, $contents) !== strlen($contents)) {
+                $this->restoreCertificateFiles($originals);
+                return false;
+            }
         }
-        if (!$saved) return false;
 
         if ($this->log instanceof \Psr\Log\LoggerInterface) {
             $this->log->info('Certificate for \'' . $this->basename . '\' saved');
         } elseif ($this->log >= LEClient::LOG_STATUS) LEFunctions::log('Certificate for \'' . $this->basename . '\' saved', 'function getCertificate');
         return true;
+    }
+
+    /**
+     * @param array $originals
+     */
+    private function restoreCertificateFiles(array $originals)
+    {
+        foreach ($originals as $file => $original) {
+            if ($original['exists']) {
+                @file_put_contents($file, $original['contents']);
+            } elseif (file_exists($file)) {
+                @unlink($file);
+            }
+        }
     }
 
     private function validateCertificateResponse(array $response)

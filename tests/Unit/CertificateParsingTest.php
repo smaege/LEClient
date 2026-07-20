@@ -125,6 +125,29 @@ class CertificateParsingTest extends TestCase
         $this->assertFalse($order->getCertificate());
     }
 
+    public function testGetCertificateRestoresCertificateWhenFullchainCannotBeWritten(): void
+    {
+        $leaf = trim(AcmeResponseFactory::certificatePem());
+        $certificateKeys = $this->certificateKeys();
+        $previousCertificate = 'previous certificate contents';
+        file_put_contents($certificateKeys['certificate'], $previousCertificate);
+
+        $blockedPath = $this->tempDir->path() . '/not-a-directory';
+        file_put_contents($blockedPath, 'blocking file');
+        $certificateKeys['fullchain_certificate'] = $blockedPath . '/fullchain.crt';
+
+        $order = $this->createValidOrderWithStub([
+            'request' => 'POST',
+            'header' => '',
+            'status' => 200,
+            'body' => $leaf . "\n",
+        ], $certificateKeys);
+
+        $this->assertFalse($order->getCertificate());
+        $this->assertSame($previousCertificate, file_get_contents($certificateKeys['certificate']));
+        $this->assertFileDoesNotExist($certificateKeys['fullchain_certificate']);
+    }
+
     public function testGetCertificateReturnsFalseForInvalidPem(): void
     {
         $order = $this->createValidOrderWithStub([
