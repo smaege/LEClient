@@ -125,10 +125,12 @@ class CertificateParsingTest extends TestCase
         $this->assertFalse($order->getCertificate());
     }
 
-    public function testGetCertificateReturnsFalseWhenFullchainCannotBeWritten(): void
+    public function testGetCertificateRestoresCertificateWhenFullchainCannotBeWritten(): void
     {
         $leaf = trim(AcmeResponseFactory::certificatePem());
+        $oldCertificate = trim(AcmeResponseFactory::chainPem());
         $certificateKeys = $this->certificateKeys();
+        file_put_contents($certificateKeys['certificate'], $oldCertificate);
         $blockedPath = $this->tempDir->path() . '/not-a-directory';
         file_put_contents($blockedPath, 'blocking file');
         $certificateKeys['fullchain_certificate'] = $blockedPath . '/fullchain.crt';
@@ -141,8 +143,7 @@ class CertificateParsingTest extends TestCase
         ], $certificateKeys);
 
         $this->assertFalse($order->getCertificate());
-        $this->assertSame($leaf, trim(file_get_contents($certificateKeys['certificate'])));
-        $this->assertFileDoesNotExist($certificateKeys['fullchain_certificate']);
+        $this->assertSame($oldCertificate, trim(file_get_contents($certificateKeys['certificate'])));
     }
 
     public function testGetCertificateUsesPreferredAlternateChainWhenIssuerMatches(): void
